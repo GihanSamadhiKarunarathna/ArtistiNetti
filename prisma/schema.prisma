@@ -1,0 +1,381 @@
+// ArtistiNetti — Phase 1 data model.
+// See /Users/gihan/.claude/plans/shimmering-kindling-planet.md for the design rationale.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  ARTIST
+  AGENT
+  CLIENT
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum AvailabilityType {
+  CONFIRMED_GIG
+  HOLD
+  BLOCKED
+  PENDING_QUOTE
+}
+
+enum InquiryStatus {
+  NEW
+  IN_REVIEW
+  QUOTED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  CANCELLED
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  WITHDRAWN
+}
+
+enum EventType {
+  WEDDING
+  CORPORATE
+  BAR_CLUB
+  PRIVATE_PARTY
+  FESTIVAL
+  OTHER
+}
+
+enum SenderRole {
+  CLIENT
+  ARTIST
+  AGENT
+  ADMIN
+  SYSTEM
+}
+
+enum PaymentProviderType {
+  MOCK
+  STRIPE
+  PAYTRAIL
+  MOBILEPAY
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  RELEASED
+  REFUNDED
+  FAILED
+  CANCELLED
+}
+
+enum PaymentPurpose {
+  DEPOSIT
+  BALANCE
+  FULL
+  PAYOUT
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  emailVerified DateTime?
+  phone         String?
+  name          String?
+  image         String?
+  passwordHash  String?
+  role          Role
+  status        ApprovalStatus @default(PENDING)
+  locale        String         @default("fi")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  artistProfile   ArtistProfile? @relation("UserArtistProfile")
+  agentProfile    AgentProfile?
+  clientProfile   ClientProfile?
+  bandMemberships BandMember[]
+  messagesSent    Message[]
+  auditLogs       AuditLog[]
+
+  @@index([role, status])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model AgentProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agencyName    String?
+  commissionPct Decimal  @default(0) @db.Decimal(5, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  managedArtists ArtistProfile[] @relation("AgentManagesArtist")
+}
+
+model ArtistProfile {
+  id          String        @id @default(cuid())
+  ownerUserId String        @unique
+  owner       User          @relation("UserArtistProfile", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  agentId     String?
+  agent       AgentProfile? @relation("AgentManagesArtist", fields: [agentId], references: [id])
+
+  bandSlug     String      @unique
+  bandName     String
+  bio          String?     @db.Text
+  bioEn        String?     @db.Text
+  genres       String[]
+  city         String?
+  region       String?
+  country      String      @default("FI")
+  minBudgetEur Int?
+  maxBudgetEur Int?
+  eventTypes   EventType[]
+
+  spotifyUrl       String?
+  youtubeUrl       String?
+  websiteUrl       String?
+  instagramUrl     String?
+  heroImageUrl     String?
+  galleryImageUrls String[]
+  techRiderUrl     String?
+  stagePlanUrl     String?
+
+  approvalStatus ApprovalStatus @default(PENDING)
+  isPublished    Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  members      BandMember[]
+  availability AvailabilityEntry[]
+  inquiries    InquiryRequest[]
+  gigThreads   GigThread[]
+
+  @@index([city, region])
+  @@index([approvalStatus, isPublished])
+}
+
+model BandMember {
+  id              String        @id @default(cuid())
+  artistProfileId String
+  artistProfile   ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?         @relation(fields: [userId], references: [id])
+  displayName     String
+  instrument      String?
+  payoutSharePct  Decimal?      @db.Decimal(5, 2)
+  isOwner         Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+
+  @@index([artistProfileId])
+}
+
+model Venue {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  city      String?
+  region    String?
+  country   String   @default("FI")
+  createdAt DateTime @default(now())
+
+  availabilityEntries AvailabilityEntry[]
+  inquiries           InquiryRequest[]
+}
+
+model ClientProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName  String
+  phone     String?
+  company   String?
+  createdAt DateTime @default(now())
+
+  inquiries InquiryRequest[]
+}
+
+model AvailabilityEntry {
+  id              String        @id @default(cuid())
+  artistProfileId String
+  artistProfile   ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+  type            AvailabilityType
+  startDate       DateTime
+  endDate         DateTime
+  title           String?
+  venueId         String?
+  venue           Venue?          @relation(fields: [venueId], references: [id])
+  relatedInquiryId String?        @unique
+  relatedInquiry  InquiryRequest? @relation(fields: [relatedInquiryId], references: [id])
+  notes           String?
+  isPublicBusy    Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([artistProfileId, startDate, endDate])
+}
+
+model InquiryRequest {
+  id              String         @id @default(cuid())
+  artistProfileId String
+  artistProfile   ArtistProfile  @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+  clientProfileId String?
+  clientProfile   ClientProfile? @relation(fields: [clientProfileId], references: [id])
+
+  contactName  String
+  contactEmail String
+  contactPhone String?
+
+  eventType    EventType
+  eventDate    DateTime
+  eventCity    String?
+  venueId      String?
+  venue        Venue?   @relation(fields: [venueId], references: [id])
+  guestCount   Int?
+  budgetMinEur Int?
+  budgetMaxEur Int?
+  message      String?       @db.Text
+  status       InquiryStatus @default(NEW)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  quotes           Quote[]
+  gigThread        GigThread?
+  availabilityHold AvailabilityEntry?
+
+  @@index([artistProfileId, status])
+}
+
+model Quote {
+  id              String    @id @default(cuid())
+  inquiryId       String
+  inquiry         InquiryRequest @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  createdByUserId String
+  amountEur       Int
+  depositEur      Int?
+  currency        String    @default("EUR")
+  validUntil      DateTime?
+  termsText       String?     @db.Text
+  status          QuoteStatus @default(DRAFT)
+  sentAt          DateTime?
+  respondedAt     DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  transactions Transaction[]
+
+  @@index([inquiryId, status])
+}
+
+model GigThread {
+  id              String        @id @default(cuid())
+  inquiryId       String        @unique
+  inquiry         InquiryRequest @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  artistProfileId String
+  artistProfile   ArtistProfile  @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+  isArchived      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  messages Message[]
+}
+
+model Message {
+  id             String     @id @default(cuid())
+  gigThreadId    String
+  gigThread      GigThread  @relation(fields: [gigThreadId], references: [id], onDelete: Cascade)
+  senderUserId   String?
+  sender         User?      @relation(fields: [senderUserId], references: [id])
+  senderRole     SenderRole
+  body           String     @db.Text
+  attachmentUrls String[]
+  readAt         DateTime?
+  createdAt      DateTime   @default(now())
+
+  @@index([gigThreadId, createdAt])
+}
+
+// Provider-agnostic payment/escrow stub. Real Stripe/Paytrail/MobilePay wiring
+// plugs into `provider` + `providerRef` later without a schema change.
+model Transaction {
+  id          String   @id @default(cuid())
+  quoteId     String?
+  quote       Quote?   @relation(fields: [quoteId], references: [id])
+  purpose     PaymentPurpose
+  provider    PaymentProviderType @default(MOCK)
+  providerRef String?
+  amountEur   Int
+  currency    String        @default("EUR")
+  status      PaymentStatus @default(PENDING)
+  payerUserId String?
+  payeeUserId String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([quoteId])
+  @@index([status])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+}

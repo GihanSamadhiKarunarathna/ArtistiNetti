@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ArtistiNetti
 
-## Getting Started
+A Finland-first marketplace connecting artists/bands, booking agents, and event
+clients — discovery, availability, inquiries, quotes, and (mock) payments in
+one platform. See `/Users/gihan/.claude/plans/shimmering-kindling-planet.md`
+for the full architecture write-up.
 
-First, run the development server:
+## Stack
+
+Next.js (App Router) · TypeScript · Prisma + Postgres · Auth.js v5 · next-intl
+(fi/en) · Tailwind + shadcn/ui · Vitest + Playwright.
+
+## Getting started
 
 ```bash
+npm install
+
+# Start a local Postgres instance (no Docker needed)
+npm run db:dev
+
+# Point .env at it (see the connection string db:dev prints), then:
+npm run db:migrate
+npm run db:seed   # creates admin@artistinetti.fi / ChangeMe123!
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. Fi is the default (unprefixed) locale; English is
+available at `/en`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Email & file uploads in local dev
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- No `RESEND_API_KEY` is required to develop locally: magic-link sign-in URLs
+  (used for guest/client login) are printed to the dev server console instead
+  of being emailed.
+- No `BLOB_READ_WRITE_TOKEN` is required either: uploaded files fall back to
+  `/public/uploads` on disk. Set both env vars to switch to real Resend and
+  Vercel Blob in production.
+- Payments run against an in-memory `MOCK` provider (see `src/lib/payments`)
+  until real Stripe/Paytrail/MobilePay credentials and adapters are added.
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+| Script | Description |
+|---|---|
+| `npm run dev` | Start the Next.js dev server |
+| `npm run build` / `start` | Production build / server |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run lint` | ESLint |
+| `npm run test` | Vitest unit tests |
+| `npm run test:e2e` | Playwright end-to-end tests (auto-starts the app) |
+| `npm run db:dev` | Start/attach to the local Postgres dev server |
+| `npm run db:migrate` | Create & apply a Prisma migration |
+| `npm run db:seed` | Seed the first admin user |
+| `npm run db:studio` | Prisma Studio |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+prisma/               Schema, migrations, seed script
+src/
+  app/[locale]/        Route groups: (public), (client), (artist), (agent), (admin)
+  components/ui/       shadcn/ui primitives
+  components/shared/   Cross-role building blocks (DataTable, StepperForm bits, uploads)
+  components/dashboard/ DashboardShell (sidebar/topbar shell for role dashboards)
+  components/features/ Feature-specific UI, grouped by domain
+  lib/                 auth, db, payments, storage, validation, i18n, constants
+  server/actions/      "use server" mutations (thin, call into services)
+  server/services/     Business logic, reused by actions and (future) webhooks
+messages/              fi.json / en.json translation catalogs
+tests/e2e/             Playwright specs (the money-path flows)
+tests/unit/            Vitest specs
+```
 
-## Deploy on Vercel
+## Status
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This is the Phase 1 (MVP) build: registration for all roles, artist public
+profiles + media kit, availability calendar, discovery directory, guest
+inquiry wizard, quote creation, mock-payment quote acceptance, gig messaging,
+a thin agent multi-artist view, and admin approvals/metrics.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Not yet built (by design — see the architecture doc): band split payouts,
+the Finnish expense/travel logger, CRM/CSV export, real escrow release, VAT
+invoicing, agent commission withholding, the venue database, the
+dispute/cancellation engine, and GMV analytics. The data model already has
+room for all of these (see `prisma/schema.prisma` comments).
