@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Link } from "@/i18n/navigation"
 import { LocaleSwitcher } from "./locale-switcher"
+import { MobileNav } from "./mobile-nav"
 import { UserMenu } from "./user-menu"
 
 const DASHBOARD_HREF: Record<string, string> = {
@@ -16,6 +17,7 @@ const DASHBOARD_HREF: Record<string, string> = {
 export async function SiteHeader() {
   const [t, session] = await Promise.all([getTranslations("nav"), auth()])
   const user = session?.user
+  const dashboardHref = user ? (DASHBOARD_HREF[user.role] ?? "/") : "/"
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
@@ -54,18 +56,31 @@ export async function SiteHeader() {
             <UserMenu
               name={user.name ?? null}
               email={user.email ?? ""}
-              dashboardHref={DASHBOARD_HREF[user.role] ?? "/"}
+              dashboardHref={dashboardHref}
             />
           ) : (
             <>
               <Button variant="ghost" asChild className="hidden sm:inline-flex">
                 <Link href="/login">{t("login")}</Link>
               </Button>
-              <Button asChild>
+              <Button asChild className="hidden sm:inline-flex">
                 <Link href="/register">{t("register")}</Link>
               </Button>
             </>
           )}
+          <MobileNav
+            isLoggedIn={Boolean(user)}
+            dashboardHref={dashboardHref}
+            labels={{
+              discover: t("discover"),
+              howItWorks: t("howItWorks"),
+              forArtists: t("forArtists"),
+              login: t("login"),
+              register: t("register"),
+              dashboard: t("dashboard"),
+              logout: t("logout"),
+            }}
+          />
         </div>
       </div>
     </header>

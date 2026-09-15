@@ -1,13 +1,8 @@
 import { Inbox, CalendarCheck, UserRound } from "lucide-react"
 import { getTranslations } from "next-intl/server"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { StatCard } from "@/components/shared/stat-card"
 import { Link } from "@/i18n/navigation"
 import { requireRole } from "@/lib/auth"
 import { getOwnArtistProfile } from "@/server/services/artist-profile"
@@ -58,50 +53,39 @@ export default async function ArtistDashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              {t("newInquiries")}
-            </CardTitle>
-            <Inbox className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold">{newInquiries}</p>
+        <StatCard
+          label={t("newInquiries")}
+          value={newInquiries}
+          icon={<Inbox />}
+          accent="primary"
+          action={
             <Button variant="link" className="h-auto p-0" asChild>
               <Link href="/artist/inquiries">View all</Link>
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              {t("upcomingGigs")}
-            </CardTitle>
-            <CalendarCheck className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold">{upcomingGigs}</p>
+          }
+        />
+        <StatCard
+          label={t("upcomingGigs")}
+          value={upcomingGigs}
+          icon={<CalendarCheck />}
+          accent="chart-2"
+          action={
             <Button variant="link" className="h-auto p-0" asChild>
               <Link href="/artist/availability">View calendar</Link>
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              {t("profileCompletion")}
-            </CardTitle>
-            <UserRound className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold">{completeness}%</p>
+          }
+        />
+        <StatCard
+          label={t("profileCompletion")}
+          value={`${completeness}%`}
+          icon={<UserRound />}
+          accent="chart-3"
+          action={
             <Button variant="link" className="h-auto p-0" asChild>
               <Link href="/artist/profile">Edit profile</Link>
             </Button>
-          </CardContent>
-        </Card>
+          }
+        />
       </div>
     </div>
   )

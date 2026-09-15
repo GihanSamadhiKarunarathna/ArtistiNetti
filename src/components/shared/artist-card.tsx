@@ -1,14 +1,7 @@
 import Image from "next/image"
 import { useLocale, useTranslations } from "next-intl"
-import { Music4 } from "lucide-react"
+import { ArrowUpRight, MapPin, Music4 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Link } from "@/i18n/navigation"
 
 export type ArtistCardData = {
@@ -29,14 +22,17 @@ export function ArtistCard({ artist }: { artist: ArtistCardData }) {
   const bio = locale === "en" && artist.bioEn ? artist.bioEn : artist.bio
 
   return (
-    <Card className="overflow-hidden pt-0 transition-shadow hover:shadow-md">
-      <div className="relative aspect-4/3 w-full bg-muted">
+    <Link
+      href={`/${artist.bandSlug}`}
+      className="group flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+    >
+      <div className="relative aspect-4/3 w-full overflow-hidden bg-muted">
         {artist.heroImageUrl ? (
           <Image
             src={artist.heroImageUrl}
             alt={artist.bandName}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 100vw"
           />
         ) : (
@@ -44,41 +40,34 @@ export function ArtistCard({ artist }: { artist: ArtistCardData }) {
             <Music4 className="size-10" aria-hidden />
           </div>
         )}
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+        {artist.minBudgetEur != null && (
+          <span className="absolute right-3 top-3 rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold shadow-sm backdrop-blur-sm">
+            {t("discover.startingFrom")} {artist.minBudgetEur}€
+          </span>
+        )}
       </div>
-      <CardHeader>
+
+      <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold leading-tight">{artist.bandName}</h3>
+          <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-primary" />
         </div>
         {(artist.city || artist.region) && (
-          <p className="text-sm text-muted-foreground">
+          <p className="flex items-center gap-1 text-sm text-muted-foreground">
+            <MapPin className="size-3.5" />
             {[artist.city, artist.region].filter(Boolean).join(", ")}
           </p>
         )}
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-3">
-        {bio && (
-          <p className="line-clamp-2 text-sm text-muted-foreground">{bio}</p>
-        )}
-        <div className="flex flex-wrap gap-1.5">
+        {bio && <p className="line-clamp-2 text-sm text-muted-foreground">{bio}</p>}
+        <div className="mt-auto flex flex-wrap gap-1.5 pt-2">
           {artist.genres.slice(0, 3).map((genre) => (
             <Badge key={genre} variant="secondary">
               {t.has(`genres.${genre}`) ? t(`genres.${genre}`) : genre}
             </Badge>
           ))}
         </div>
-      </CardContent>
-      <CardFooter className="flex items-center justify-between gap-2 border-t pt-4">
-        {artist.minBudgetEur != null ? (
-          <span className="text-sm font-medium">
-            {t("discover.startingFrom")} {artist.minBudgetEur}€
-          </span>
-        ) : (
-          <span />
-        )}
-        <Button asChild size="sm" variant="outline">
-          <Link href={`/${artist.bandSlug}`}>{t("discover.viewProfile")}</Link>
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </Link>
   )
 }

@@ -14,14 +14,18 @@ export default async function RegisterChooserPage() {
   const t = await getTranslations("register")
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-      <h1 className="text-center text-3xl font-semibold">{t("chooseRole")}</h1>
+    <div className="w-full max-w-2xl">
+      <h1 className="text-center text-2xl font-semibold sm:text-3xl">
+        {t("chooseRole")}
+      </h1>
 
-      <div className="mt-10 grid gap-6 sm:grid-cols-2">
-        <Card className="flex flex-col">
+      <div className="mt-8 grid gap-5 sm:grid-cols-2">
+        <Card className="flex flex-col transition-all hover:-translate-y-1 hover:shadow-lg">
           <CardHeader>
-            <Mic2 className="size-8 text-primary" aria-hidden />
-            <CardTitle>{t("artistCardTitle")}</CardTitle>
+            <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Mic2 className="size-6" aria-hidden />
+            </div>
+            <CardTitle className="pt-2">{t("artistCardTitle")}</CardTitle>
             <CardDescription>{t("artistCardBody")}</CardDescription>
           </CardHeader>
           <CardContent className="mt-auto">
@@ -34,10 +38,12 @@ export default async function RegisterChooserPage() {
           </CardContent>
         </Card>
 
-        <Card className="flex flex-col">
+        <Card className="flex flex-col transition-all hover:-translate-y-1 hover:shadow-lg">
           <CardHeader>
-            <Briefcase className="size-8 text-primary" aria-hidden />
-            <CardTitle>{t("agentCardTitle")}</CardTitle>
+            <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Briefcase className="size-6" aria-hidden />
+            </div>
+            <CardTitle className="pt-2">{t("agentCardTitle")}</CardTitle>
             <CardDescription>{t("agentCardBody")}</CardDescription>
           </CardHeader>
           <CardContent className="mt-auto">

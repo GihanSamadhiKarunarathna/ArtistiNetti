@@ -1,5 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client"
 import { prisma } from "@/lib/db"
+import { GENRES } from "@/lib/constants"
 
 export type ArtistFilters = {
   genre?: string
@@ -69,6 +70,23 @@ export async function getPublicArtistBySlug(bandSlug: string) {
   return prisma.artistProfile.findFirst({
     where: { bandSlug, ...PUBLISHED_WHERE },
   })
+}
+
+export async function getPublicStats() {
+  const [artistCount, cities] = await Promise.all([
+    prisma.artistProfile.count({ where: PUBLISHED_WHERE }),
+    prisma.artistProfile.findMany({
+      where: { ...PUBLISHED_WHERE, city: { not: null } },
+      select: { city: true },
+      distinct: ["city"],
+    }),
+  ])
+
+  return {
+    artistCount,
+    cityCount: cities.length,
+    genreCount: GENRES.length,
+  }
 }
 
 export async function getDistinctCities() {

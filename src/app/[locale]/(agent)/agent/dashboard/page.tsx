@@ -1,12 +1,7 @@
 import { Mic2 } from "lucide-react"
 import { getTranslations } from "next-intl/server"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { StatCard } from "@/components/shared/stat-card"
 import { Link } from "@/i18n/navigation"
 import { requireRole } from "@/lib/auth"
 import { getOwnAgentProfile } from "@/server/services/agent"
@@ -24,20 +19,18 @@ export default async function AgentDashboardPage() {
         Welcome back, {user.name ?? agentProfile.agencyName}
       </h1>
 
-      <Card className="max-w-sm">
-        <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Managed artists
-          </CardTitle>
-          <Mic2 className="size-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <p className="text-3xl font-semibold">{agentProfile.managedArtists.length}</p>
-          <Button variant="link" className="h-auto p-0" asChild>
-            <Link href="/agent/artists">{t("manage")}</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="max-w-sm">
+        <StatCard
+          label="Managed artists"
+          value={agentProfile.managedArtists.length}
+          icon={<Mic2 />}
+          action={
+            <Button variant="link" className="h-auto p-0" asChild>
+              <Link href="/agent/artists">{t("manage")}</Link>
+            </Button>
+          }
+        />
+      </div>
     </div>
   )
 }

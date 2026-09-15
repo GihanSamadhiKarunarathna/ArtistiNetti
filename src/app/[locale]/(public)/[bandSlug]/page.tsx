@@ -48,7 +48,7 @@ export default async function ArtistPublicPage({
 
   return (
     <div>
-      <div className="relative h-64 w-full bg-muted sm:h-80">
+      <div className="relative h-72 w-full bg-muted sm:h-96">
         {artist.heroImageUrl ? (
           <Image
             src={artist.heroImageUrl}
@@ -62,11 +62,11 @@ export default async function ArtistPublicPage({
             <Music4 className="size-16 text-muted-foreground" />
           </div>
         )}
-        <div className="absolute inset-0 bg-linear-to-t from-background via-background/10 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-transparent" />
       </div>
 
-      <div className="mx-auto -mt-16 max-w-5xl px-4 pb-20 sm:px-6 lg:px-8">
-        <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+      <div className="mx-auto max-w-5xl px-4 pb-20 sm:px-6 lg:px-8">
+        <div className="-mt-8 flex flex-col justify-between gap-6 rounded-2xl border bg-card p-6 shadow-lg sm:-mt-10 sm:flex-row sm:items-end sm:p-7">
           <div>
             <h1 className="text-3xl font-bold sm:text-4xl">{artist.bandName}</h1>
             {(artist.city || artist.region) && (
@@ -147,10 +147,18 @@ export default async function ArtistPublicPage({
         {artist.galleryImageUrls.length > 0 && (
           <section className="mt-10">
             <h2 className="text-xl font-semibold">{t("gallery")}</h2>
-            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {artist.galleryImageUrls.map((url) => (
-                <div key={url} className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-                  <Image src={url} alt={artist.bandName} fill className="object-cover" />
+                <div
+                  key={url}
+                  className="group relative aspect-square overflow-hidden rounded-xl bg-muted"
+                >
+                  <Image
+                    src={url}
+                    alt={artist.bandName}
+                    fill
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
                 </div>
               ))}
             </div>
