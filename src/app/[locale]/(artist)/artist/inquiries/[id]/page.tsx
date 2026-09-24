@@ -3,6 +3,7 @@ import { MessageSquare } from "lucide-react"
 import { getTranslations } from "next-intl/server"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   Card,
   CardContent,
@@ -12,7 +13,12 @@ import {
 import { Link } from "@/i18n/navigation"
 import { requireRole } from "@/lib/auth"
 import { CreateQuoteForm } from "@/components/features/quotes/create-quote-form"
+import { GateTwoActions } from "@/components/features/quotes/gate-two-actions"
+import { PayoutBreakdownCard } from "@/components/features/payouts/payout-breakdown-card"
 import { getInquiryForArtist } from "@/server/services/inquiries"
+import { getPayoutBreakdown } from "@/server/services/payouts"
+
+const NEEDS_NEW_QUOTE_STATUSES = new Set(["DECLINED", "WITHDRAWN", "DRAFT"])
 
 export default async function ArtistInquiryDetailPage({
   params,
@@ -28,6 +34,10 @@ export default async function ArtistInquiryDetailPage({
   ])
   const inquiry = await getInquiryForArtist(user.id, id)
   const latestQuote = inquiry.quotes[0]
+  const payoutBreakdown =
+    latestQuote?.status === "ACCEPTED"
+      ? await getPayoutBreakdown(inquiry.artistProfileId, latestQuote.id)
+      : null
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -82,16 +92,37 @@ export default async function ArtistInquiryDetailPage({
           <CardHeader>
             <CardTitle className="text-base">{tQuotes("title")}</CardTitle>
           </CardHeader>
-          <CardContent className="flex items-center justify-between text-sm">
-            <div>
+          <CardContent className="space-y-4 text-sm">
+            <div className="flex items-center justify-between">
               <p>{latestQuote.amountEur}€ {latestQuote.depositEur ? `(${latestQuote.depositEur}€ deposit)` : ""}</p>
+              <Badge>{latestQuote.status}</Badge>
             </div>
-            <Badge>{latestQuote.status}</Badge>
+
+            {latestQuote.status === "AWAITING_ARTIST_APPROVAL" && (
+              <>
+                <Alert>
+                  <AlertDescription>
+                    Your agency drafted this quote — review it before it goes to the client.
+                  </AlertDescription>
+                </Alert>
+                <GateTwoActions quoteId={latestQuote.id} />
+              </>
+            )}
+
+            {latestQuote.status === "DRAFT" && latestQuote.artistRejectionNote && (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  You sent this back for revision: &ldquo;{latestQuote.artistRejectionNote}&rdquo;
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {(!latestQuote || latestQuote.status === "DECLINED" || latestQuote.status === "WITHDRAWN") && (
+      {payoutBreakdown && <PayoutBreakdownCard breakdown={payoutBreakdown} />}
+
+      {(!latestQuote || NEEDS_NEW_QUOTE_STATUSES.has(latestQuote.status)) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{tQuotes("createTitle")}</CardTitle>

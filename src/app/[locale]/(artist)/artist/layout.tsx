@@ -3,6 +3,8 @@ import {
   UserRound,
   CalendarDays,
   Inbox,
+  Receipt,
+  Building2,
 } from "lucide-react"
 import { getTranslations } from "next-intl/server"
 import { DashboardShell, type DashboardNavItem } from "@/components/dashboard/dashboard-shell"
@@ -23,6 +25,8 @@ export default async function ArtistLayout({
     { href: "/artist/profile", label: t("profile"), icon: <UserRound /> },
     { href: "/artist/availability", label: t("availability"), icon: <CalendarDays /> },
     { href: "/artist/inquiries", label: t("inquiries"), icon: <Inbox /> },
+    { href: "/artist/expenses", label: t("expenses"), icon: <Receipt /> },
+    { href: "/artist/agency", label: t("agency"), icon: <Building2 /> },
   ]
 
   return (

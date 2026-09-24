@@ -24,10 +24,10 @@ export const updateArtistProfileSchema = z.object({
 
 export type UpdateArtistProfileInput = z.infer<typeof updateArtistProfileSchema>
 
-export const addBandMemberSchema = z.object({
-  displayName: z.string().min(1, "Name is required"),
-  instrument: z.string().max(80).optional(),
+export const updateBandMemberSchema = z.object({
   payoutSharePct: z.coerce.number().min(0).max(100).optional(),
+  canManageCalendar: z.coerce.boolean().optional(),
+  canLogExpenses: z.coerce.boolean().optional(),
 })
 
-export type AddBandMemberInput = z.infer<typeof addBandMemberSchema>
+export type UpdateBandMemberInput = z.infer<typeof updateBandMemberSchema>

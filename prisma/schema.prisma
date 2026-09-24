@@ -1,4 +1,4 @@
-// ArtistiNetti — Phase 1 data model.
+// ArtistiNetti — v1.0 data model.
 // See /Users/gihan/.claude/plans/shimmering-kindling-planet.md for the design rationale.
 
 generator client {
@@ -32,6 +32,7 @@ enum AvailabilityType {
 }
 
 enum InquiryStatus {
+  AWAITING_ARTIST_CONFIRMATION
   NEW
   IN_REVIEW
   QUOTED
@@ -43,6 +44,7 @@ enum InquiryStatus {
 
 enum QuoteStatus {
   DRAFT
+  AWAITING_ARTIST_APPROVAL
   SENT
   ACCEPTED
   DECLINED
@@ -89,6 +91,11 @@ enum PaymentPurpose {
   BALANCE
   FULL
   PAYOUT
+}
+
+enum ExpenseStatus {
+  DRAFT
+  SUBMITTED
 }
 
 model User {
@@ -152,24 +159,66 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model AgentProfile {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agencyName    String?
-  commissionPct Decimal  @default(0) @db.Decimal(5, 2)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+// A booking agency, always present as a tenant — including "agencies of one"
+// auto-created for self-represented bands (isSelfManaged = true).
+model Agency {
+  id                   String   @id @default(cuid())
+  name                 String
+  businessId           String?  @unique
+  isSelfManaged        Boolean  @default(false)
+  defaultCommissionPct Decimal  @default(0) @db.Decimal(5, 2)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  managedArtists ArtistProfile[] @relation("AgentManagesArtist")
+  staff       AgentProfile[]
+  artists     ArtistProfile[] @relation("AgencyArtists")
+  selfArtists ArtistProfile[] @relation("AgencySelfOwner")
+  invites     AgencyInvite[]
+
+  @@index([isSelfManaged])
+}
+
+model AgencyInvite {
+  id              String    @id @default(cuid())
+  agencyId        String
+  agency          Agency    @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  email           String
+  name            String?
+  token           String    @unique
+  invitedByUserId String
+  acceptedAt      DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime  @default(now())
+
+  @@index([agencyId])
+}
+
+model AgentProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agencyId       String
+  agency         Agency   @relation(fields: [agencyId], references: [id])
+  isPrimaryAdmin Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([agencyId])
 }
 
 model ArtistProfile {
-  id          String        @id @default(cuid())
-  ownerUserId String        @unique
-  owner       User          @relation("UserArtistProfile", fields: [ownerUserId], references: [id], onDelete: Cascade)
-  agentId     String?
-  agent       AgentProfile? @relation("AgentManagesArtist", fields: [agentId], references: [id])
+  id          String @id @default(cuid())
+  ownerUserId String @unique
+  owner       User   @relation("UserArtistProfile", fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  // Current representing agency (always set — self-managed bands point at
+  // their own auto-created tenant). `ownAgencyId` never changes after
+  // creation, so "revert to self-managed" is always a one-field update.
+  agencyId              String
+  agency                Agency   @relation("AgencyArtists", fields: [agencyId], references: [id])
+  ownAgencyId           String
+  ownAgency             Agency   @relation("AgencySelfOwner", fields: [ownAgencyId], references: [id])
+  commissionPctOverride Decimal? @db.Decimal(5, 2)
 
   bandSlug     String      @unique
   bandName     String
@@ -197,26 +246,49 @@ model ArtistProfile {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
-  members      BandMember[]
-  availability AvailabilityEntry[]
-  inquiries    InquiryRequest[]
-  gigThreads   GigThread[]
+  members        BandMember[]
+  bandInvites    BandInvite[]
+  availability   AvailabilityEntry[]
+  inquiries      InquiryRequest[]
+  gigThreads     GigThread[]
+  travelExpenses TravelExpense[]
 
   @@index([city, region])
   @@index([approvalStatus, isPublished])
+  @@index([agencyId])
 }
 
 model BandMember {
-  id              String        @id @default(cuid())
+  id                String        @id @default(cuid())
+  artistProfileId   String
+  artistProfile     ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+  userId            String?
+  user              User?         @relation(fields: [userId], references: [id])
+  displayName       String
+  instrument        String?
+  payoutSharePct    Decimal?      @db.Decimal(5, 2)
+  isOwner           Boolean       @default(false)
+  canManageCalendar Boolean       @default(true)
+  canLogExpenses    Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+
+  travelExpenses TravelExpense[]
+
+  @@index([artistProfileId])
+}
+
+model BandInvite {
+  id              String    @id @default(cuid())
   artistProfileId String
   artistProfile   ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
-  userId          String?
-  user            User?         @relation(fields: [userId], references: [id])
+  email           String
   displayName     String
   instrument      String?
-  payoutSharePct  Decimal?      @db.Decimal(5, 2)
-  isOwner         Boolean       @default(false)
-  createdAt       DateTime      @default(now())
+  token           String    @unique
+  invitedByUserId String
+  acceptedAt      DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime  @default(now())
 
   @@index([artistProfileId])
 }
@@ -263,6 +335,8 @@ model AvailabilityEntry {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  travelExpenses TravelExpense[]
+
   @@index([artistProfileId, startDate, endDate])
 }
 
@@ -286,7 +360,7 @@ model InquiryRequest {
   budgetMinEur Int?
   budgetMaxEur Int?
   message      String?       @db.Text
-  status       InquiryStatus @default(NEW)
+  status       InquiryStatus @default(AWAITING_ARTIST_CONFIRMATION)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -308,6 +382,8 @@ model Quote {
   validUntil      DateTime?
   termsText       String?     @db.Text
   status          QuoteStatus @default(DRAFT)
+  artistApprovedAt     DateTime?
+  artistRejectionNote  String?   @db.Text
   sentAt          DateTime?
   respondedAt     DateTime?
   createdAt       DateTime    @default(now())
@@ -365,6 +441,33 @@ model Transaction {
 
   @@index([quoteId])
   @@index([status])
+}
+
+// Kilometers/receipts a band member logs against a gig. No approval step —
+// members submit directly; agencies get read-only visibility for invoicing.
+model TravelExpense {
+  id              String   @id @default(cuid())
+  artistProfileId String
+  artistProfile   ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+  bandMemberId    String
+  bandMember      BandMember    @relation(fields: [bandMemberId], references: [id], onDelete: Cascade)
+
+  availabilityEntryId String?
+  availabilityEntry   AvailabilityEntry? @relation(fields: [availabilityEntryId], references: [id])
+
+  expenseDate    DateTime
+  startLocation  String?
+  endLocation    String?
+  kilometers     Decimal? @db.Decimal(8, 2)
+  kmAllowanceEur Int?
+  otherAmountEur Int?
+  description    String?  @db.Text
+  receiptUrl     String?
+  status         ExpenseStatus @default(DRAFT)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([artistProfileId, status])
 }
 
 model AuditLog {

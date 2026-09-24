@@ -18,14 +18,16 @@ import {
 } from "@/server/actions/artist-profile"
 import { requireRole } from "@/lib/auth"
 import { Link } from "@/i18n/navigation"
-import { getOwnArtistProfile } from "@/server/services/artist-profile"
+import { getArtistProfileForMember } from "@/server/services/artist-profile"
+import { listPendingBandInvites } from "@/server/services/agency"
 
 export default async function ArtistProfilePage() {
   const [user, t] = await Promise.all([
     requireRole("ARTIST"),
     getTranslations("artistDashboard"),
   ])
-  const profile = await getOwnArtistProfile(user.id)
+  const profile = await getArtistProfileForMember(user.id)
+  const pendingInvites = await listPendingBandInvites(profile.id)
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -100,7 +102,22 @@ export default async function ArtistProfilePage() {
         </CardContent>
       </Card>
 
-      <BandMembersCard members={profile.members} />
+      <BandMembersCard
+        members={profile.members.map((m) => ({
+          id: m.id,
+          displayName: m.displayName,
+          instrument: m.instrument,
+          isOwner: m.isOwner,
+          canManageCalendar: m.canManageCalendar,
+          canLogExpenses: m.canLogExpenses,
+        }))}
+        pendingInvites={pendingInvites.map((i) => ({
+          id: i.id,
+          email: i.email,
+          displayName: i.displayName,
+          instrument: i.instrument,
+        }))}
+      />
     </div>
   )
 }

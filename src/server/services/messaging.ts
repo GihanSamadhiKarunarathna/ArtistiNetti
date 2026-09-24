@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db"
+import { assertArtistAccess } from "@/server/services/artist-profile"
 
 export async function getThreadForInquiry(inquiryId: string) {
   return prisma.gigThread.findUnique({
@@ -20,29 +21,34 @@ export async function getThreadForClient(threadId: string, clientUserId: string)
   return thread
 }
 
-export async function getThreadForArtist(threadId: string, ownerUserId: string) {
+export async function getThreadForArtist(threadId: string, userId: string) {
   const thread = await prisma.gigThread.findUniqueOrThrow({
     where: { id: threadId },
     include: {
       messages: { orderBy: { createdAt: "asc" } },
       inquiry: true,
-      artistProfile: { select: { ownerUserId: true, bandName: true } },
+      artistProfile: { select: { bandName: true } },
     },
   })
-  if (thread.artistProfile.ownerUserId !== ownerUserId) throw new Error("FORBIDDEN")
+  await assertArtistAccess(userId, thread.artistProfileId)
   return thread
 }
 
 export async function getThreadForAgent(threadId: string, agentUserId: string) {
+  const agentProfile = await prisma.agentProfile.findUniqueOrThrow({
+    where: { userId: agentUserId },
+  })
   const thread = await prisma.gigThread.findUniqueOrThrow({
     where: { id: threadId },
     include: {
       messages: { orderBy: { createdAt: "asc" } },
       inquiry: true,
-      artistProfile: { select: { bandName: true, agent: { select: { userId: true } } } },
+      artistProfile: { select: { bandName: true, agencyId: true } },
     },
   })
-  if (thread.artistProfile.agent?.userId !== agentUserId) throw new Error("FORBIDDEN")
+  if (thread.artistProfile.agencyId !== agentProfile.agencyId) {
+    throw new Error("FORBIDDEN")
+  }
   return thread
 }
 

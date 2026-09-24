@@ -36,7 +36,12 @@ test("full booking flow: inquiry -> quote -> mock payment -> confirmed gig -> me
   await guestContext.close()
 
   await artistPage.goto("/artist/inquiries")
-  await artistPage.getByText("Booking Test Client").click()
+  await expect(artistPage.getByText("Awaiting your confirmation")).toBeVisible()
+  await artistPage.getByRole("button", { name: "Accept" }).click()
+  await expect(artistPage.getByText("Booking Test Client")).toBeVisible()
+
+  await artistPage.getByRole("link", { name: /Booking Test Client/ }).click()
+  await artistPage.waitForURL(/\/artist\/inquiries\/.+/)
   await artistPage.getByLabel("Total amount (EUR)").fill("1200")
   await artistPage.getByLabel("Deposit (EUR)").fill("300")
   await artistPage.getByRole("button", { name: "Send quote" }).click()

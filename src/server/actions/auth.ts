@@ -126,6 +126,7 @@ export async function registerAgentAction(
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
     agencyName: formData.get("agencyName"),
+    businessId: formData.get("businessId") || "",
     city: formData.get("city") || undefined,
     commissionPct: formData.get("commissionPct") || undefined,
   })
@@ -139,6 +140,14 @@ export async function registerAgentAction(
   } catch (error) {
     if (error instanceof Error && error.message === "EMAIL_TAKEN") {
       return { fieldErrors: { email: ["emailTaken"] } }
+    }
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "P2002"
+    ) {
+      return { fieldErrors: { businessId: ["businessIdTaken"] } }
     }
     throw error
   }

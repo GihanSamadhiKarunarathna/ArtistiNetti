@@ -3,7 +3,13 @@
 import { revalidatePath } from "next/cache"
 import { requireRole } from "@/lib/auth"
 import { createQuoteSchema } from "@/lib/validation/quote"
-import { acceptQuote, createQuote, declineQuote } from "@/server/services/quotes"
+import {
+  acceptQuote,
+  approveQuote,
+  createQuote,
+  declineQuote,
+  rejectQuote,
+} from "@/server/services/quotes"
 import type { ActionState } from "./auth"
 
 function fieldErrorsFrom(error: {
@@ -20,7 +26,7 @@ export async function createQuoteAction(
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const user = await requireRole("ARTIST")
+  const user = await requireRole("ARTIST", "AGENT")
 
   const parsed = createQuoteSchema.safeParse({
     amountEur: formData.get("amountEur"),
@@ -37,6 +43,20 @@ export async function createQuoteAction(
   revalidatePath(`/artist/inquiries/${inquiryId}`)
   revalidatePath("/artist/inquiries")
   return null
+}
+
+/** Gate 2 quick action: artist approves an agency-drafted quote. */
+export async function approveQuoteAction(quoteId: string) {
+  const user = await requireRole("ARTIST")
+  await approveQuote(user.id, quoteId)
+  revalidatePath("/artist/inquiries")
+}
+
+/** Gate 2 quick action: artist rejects an agency-drafted quote with feedback. */
+export async function rejectQuoteAction(quoteId: string, note: string) {
+  const user = await requireRole("ARTIST")
+  await rejectQuote(user.id, quoteId, note)
+  revalidatePath("/artist/inquiries")
 }
 
 export async function acceptQuoteAction(quoteId: string) {

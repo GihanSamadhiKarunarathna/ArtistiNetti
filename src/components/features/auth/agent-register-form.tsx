@@ -47,6 +47,17 @@ export function AgentRegisterForm() {
           <FieldError messages={fieldErrors.agencyName} />
         </div>
         <div className="space-y-2">
+          <Label htmlFor="businessId">{t("businessId")}</Label>
+          <Input id="businessId" name="businessId" placeholder="1234567-8" />
+          <FieldError
+            messages={fieldErrors.businessId?.map((code) =>
+              code === "businessIdTaken"
+                ? "This Business ID is already registered."
+                : code,
+            )}
+          />
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="city">{t("city")}</Label>
           <Input id="city" name="city" />
         </div>

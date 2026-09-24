@@ -45,6 +45,11 @@ export const registerAgentSchema = z
     password: passwordSchema,
     confirmPassword: z.string(),
     agencyName: z.string().min(2, "Agency name is required"),
+    businessId: z
+      .string()
+      .regex(/^\d{7}-\d$/, "Business ID must look like 1234567-8")
+      .optional()
+      .or(z.literal("")),
     city: z.string().optional(),
     commissionPct: z.coerce.number().min(0).max(100).default(15),
   })

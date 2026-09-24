@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ArtistCard } from "@/components/shared/artist-card"
+import { AnimatedCounter } from "@/components/shared/animated-counter"
+import { Reveal, RevealGroup, RevealItem } from "@/components/shared/reveal"
 import { Link } from "@/i18n/navigation"
 import { GENRES } from "@/lib/constants"
 import { DEMO_PHOTOS } from "@/lib/demo-images"
@@ -33,9 +35,9 @@ export default async function LandingPage() {
   }))
 
   const statItems = [
-    { value: `${stats.artistCount}+`, label: t("landing.statsArtists") },
-    { value: `${stats.genreCount}+`, label: t("landing.statsGenres") },
-    { value: `${stats.cityCount}+`, label: t("landing.statsCities") },
+    { count: stats.artistCount, label: t("landing.statsArtists") },
+    { count: stats.genreCount, label: t("landing.statsGenres") },
+    { count: stats.cityCount, label: t("landing.statsCities") },
   ]
 
   const testimonials = [1, 2, 3].map((n) => ({
@@ -93,7 +95,9 @@ export default async function LandingPage() {
             {statItems.map((stat) => (
               <div key={stat.label}>
                 <dt className="sr-only">{stat.label}</dt>
-                <dd className="text-3xl font-bold text-white">{stat.value}</dd>
+                <dd className="text-3xl font-bold text-white">
+                  <AnimatedCounter value={stat.count} suffix="+" />
+                </dd>
                 <p className="mt-1 text-xs text-white/70 sm:text-sm">{stat.label}</p>
               </div>
             ))}
@@ -107,9 +111,9 @@ export default async function LandingPage() {
           <h2 className="text-3xl font-semibold">{t("landing.howItWorksTitle")}</h2>
           <p className="mt-3 text-muted-foreground">{t("landing.howItWorksSubtitle")}</p>
         </div>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+        <RevealGroup className="mt-12 grid gap-6 md:grid-cols-3">
           {steps.map(({ Icon, title, body }, i) => (
-            <div
+            <RevealItem
               key={title}
               className="group relative rounded-2xl border bg-card p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
             >
@@ -121,9 +125,9 @@ export default async function LandingPage() {
               </p>
               <h3 className="mt-1 text-lg font-semibold">{title}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{body}</p>
-            </div>
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
       </section>
 
       {/* Featured artists */}
@@ -144,11 +148,13 @@ export default async function LandingPage() {
                 </Link>
               </Button>
             </div>
-            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <RevealGroup className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {featuredArtists.map((artist) => (
-                <ArtistCard key={artist.id} artist={artist} />
+                <RevealItem key={artist.id}>
+                  <ArtistCard artist={artist} />
+                </RevealItem>
               ))}
-            </div>
+            </RevealGroup>
           </div>
         </section>
       )}
@@ -158,34 +164,33 @@ export default async function LandingPage() {
         <h2 className="text-center text-3xl font-semibold">
           {t("landing.testimonialsTitle")}
         </h2>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+        <RevealGroup className="mt-12 grid gap-6 md:grid-cols-3">
           {testimonials.map((testimonial) => (
-            <figure
-              key={testimonial.name}
-              className="flex flex-col rounded-2xl border bg-card p-6 shadow-sm"
-            >
-              <Quote className="size-6 text-primary/40" aria-hidden />
-              <blockquote className="mt-3 flex-1 text-sm text-muted-foreground">
-                &ldquo;{testimonial.quote}&rdquo;
-              </blockquote>
-              <figcaption className="mt-5 flex items-center gap-3 border-t pt-4">
-                <Avatar>
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {testimonial.name.slice(0, 1)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium">{testimonial.name}</p>
-                  <p className="text-xs text-muted-foreground">{testimonial.role}</p>
-                </div>
-              </figcaption>
-            </figure>
+            <RevealItem key={testimonial.name}>
+              <figure className="flex h-full flex-col rounded-2xl border bg-card p-6 shadow-sm">
+                <Quote className="size-6 text-primary/40" aria-hidden />
+                <blockquote className="mt-3 flex-1 text-sm text-muted-foreground">
+                  &ldquo;{testimonial.quote}&rdquo;
+                </blockquote>
+                <figcaption className="mt-5 flex items-center gap-3 border-t pt-4">
+                  <Avatar>
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {testimonial.name.slice(0, 1)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-medium">{testimonial.name}</p>
+                    <p className="text-xs text-muted-foreground">{testimonial.role}</p>
+                  </div>
+                </figcaption>
+              </figure>
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
       </section>
 
       {/* Browse by genre */}
-      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
+      <Reveal className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
         <h2 className="text-2xl font-semibold">{t("landing.browseByGenre")}</h2>
         <div className="mt-6 flex flex-wrap gap-2">
           {GENRES.map((genre) => (
@@ -199,13 +204,13 @@ export default async function LandingPage() {
             </Link>
           ))}
         </div>
-      </section>
+      </Reveal>
 
       {/* For artists CTA */}
       <section className="relative overflow-hidden border-t bg-primary text-primary-foreground">
         <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -left-24 size-72 rounded-full bg-black/10 blur-3xl" />
-        <div className="relative mx-auto max-w-4xl px-4 py-20 text-center sm:px-6 lg:px-8">
+        <Reveal className="relative mx-auto max-w-4xl px-4 py-20 text-center sm:px-6 lg:px-8">
           <h2 className="text-3xl font-semibold sm:text-4xl">
             {t("landing.forArtistsTitle")}
           </h2>
@@ -225,7 +230,7 @@ export default async function LandingPage() {
           <Button size="lg" variant="secondary" className="mt-9" asChild>
             <Link href="/register">{t("landing.ctaJoin")}</Link>
           </Button>
-        </div>
+        </Reveal>
       </section>
     </div>
   )

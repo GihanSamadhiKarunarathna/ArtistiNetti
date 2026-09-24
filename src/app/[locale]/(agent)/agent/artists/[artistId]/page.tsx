@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation"
 import { requireRole } from "@/lib/auth"
 import { getArtistForAgent } from "@/server/services/agent"
 import { listInquiriesForArtist } from "@/server/services/inquiries"
+import { listExpensesForArtist } from "@/server/services/expenses"
 
 export default async function AgentArtistDetailPage({
   params,
@@ -18,7 +19,11 @@ export default async function AgentArtistDetailPage({
     getTranslations("eventTypes"),
   ])
   const artist = await getArtistForAgent(user.id, artistId)
-  const inquiries = await listInquiriesForArtist(artist.id)
+  const allInquiries = await listInquiriesForArtist(artist.id)
+  // Gate 1 hasn't happened yet — nothing for the agency to act on.
+  const inquiries = allInquiries.filter((i) => i.status !== "AWAITING_ARTIST_CONFIRMATION")
+  const expenses = await listExpensesForArtist(artist.id)
+  const submittedExpenses = expenses.filter((e) => e.status === "SUBMITTED")
 
   return (
     <div className="space-y-6">
@@ -37,28 +42,45 @@ export default async function AgentArtistDetailPage({
           <p className="text-sm text-muted-foreground">No inquiries yet.</p>
         )}
         {inquiries.map((inquiry) => (
-          <Card key={inquiry.id} className="flex flex-row items-center justify-between gap-4 p-4">
-            <div>
-              <p className="font-medium">
-                {inquiry.contactName} · {tEventTypes(inquiry.eventType)}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {format(new Date(inquiry.eventDate), "d MMM yyyy")}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
+          <Link key={inquiry.id} href={`/agent/artists/${artist.id}/inquiries/${inquiry.id}`}>
+            <Card className="flex flex-row items-center justify-between gap-4 p-4 transition-colors hover:bg-muted/40">
+              <div>
+                <p className="font-medium">
+                  {inquiry.contactName} · {tEventTypes(inquiry.eventType)}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {format(new Date(inquiry.eventDate), "d MMM yyyy")}
+                </p>
+              </div>
               <Badge>{inquiry.status}</Badge>
-              {inquiry.gigThread && (
-                <Link
-                  href={`/agent/messages/${inquiry.gigThread.id}`}
-                  className="text-sm font-medium text-primary hover:underline"
-                >
-                  Messages
-                </Link>
-              )}
-            </div>
-          </Card>
+            </Card>
+          </Link>
         ))}
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="font-medium">Submitted travel expenses</h2>
+        {submittedExpenses.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            No submitted expenses yet — for invoicing reference only.
+          </p>
+        )}
+        {submittedExpenses.map((expense) => {
+          const total = (expense.kmAllowanceEur ?? 0) + (expense.otherAmountEur ?? 0)
+          return (
+            <Card key={expense.id} className="flex flex-row items-center justify-between gap-4 p-4">
+              <div>
+                <p className="font-medium">
+                  {format(new Date(expense.expenseDate), "d MMM yyyy")} · {total}€
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {expense.bandMember.displayName}
+                  {expense.kilometers ? ` · ${expense.kilometers.toString()} km` : ""}
+                </p>
+              </div>
+            </Card>
+          )
+        })}
       </div>
     </div>
   )

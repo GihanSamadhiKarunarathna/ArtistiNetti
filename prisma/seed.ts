@@ -125,6 +125,9 @@ async function purgeTestArtists() {
   }
 }
 
+const DEMO_AGENCY_BUSINESS_ID = "1234567-8"
+const DEMO_AGENCY_MANAGED_SLUG = "kaupunkivalot"
+
 async function main() {
   await purgeTestArtists()
 
@@ -145,51 +148,106 @@ async function main() {
 
   const demoPasswordHash = await bcrypt.hash(DEMO_PASSWORD, 10)
 
-  for (const artist of DEMO_ARTISTS) {
-    const email = `${artist.slug}@artistinetti.fi`
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: {},
-      create: {
-        email,
-        name: artist.bandName,
-        passwordHash: demoPasswordHash,
-        role: "ARTIST",
-        status: "APPROVED",
-        locale: "fi",
-      },
-    })
-
-    await prisma.artistProfile.upsert({
-      where: { ownerUserId: user.id },
-      update: {
-        approvalStatus: "APPROVED",
-        isPublished: true,
-        heroImageUrl: artist.heroImageUrl,
-        galleryImageUrls: artist.galleryImageUrls,
-      },
-      create: {
-        ownerUserId: user.id,
-        bandSlug: artist.slug,
-        bandName: artist.bandName,
-        bio: artist.bio,
-        bioEn: artist.bioEn,
-        genres: artist.genres,
-        city: artist.city,
-        region: artist.region,
-        country: "FI",
-        minBudgetEur: artist.minBudgetEur,
-        maxBudgetEur: artist.maxBudgetEur,
-        eventTypes: artist.eventTypes,
-        heroImageUrl: artist.heroImageUrl,
-        galleryImageUrls: artist.galleryImageUrls,
-        approvalStatus: "APPROVED",
-        isPublished: true,
-        members: { create: { displayName: artist.bandName, isOwner: true } },
+  // A real (non-self-managed) demo agency, so the Gate 1/Gate 2 confirmation
+  // flow has something to exercise out of the box.
+  let demoAgency = await prisma.agency.findUnique({
+    where: { businessId: DEMO_AGENCY_BUSINESS_ID },
+  })
+  if (!demoAgency) {
+    demoAgency = await prisma.agency.create({
+      data: {
+        name: "Nordic Artist Agency",
+        businessId: DEMO_AGENCY_BUSINESS_ID,
+        isSelfManaged: false,
+        defaultCommissionPct: 15,
       },
     })
   }
-  console.log(`Seeded ${DEMO_ARTISTS.length} demo artists (password: ${DEMO_PASSWORD})`)
+
+  const agentEmail = "agent@artistinetti.fi"
+  const agentUser = await prisma.user.upsert({
+    where: { email: agentEmail },
+    update: {},
+    create: {
+      email: agentEmail,
+      name: "Nordic Agency Admin",
+      passwordHash: demoPasswordHash,
+      role: "AGENT",
+      status: "APPROVED",
+      locale: "fi",
+      agentProfile: {
+        create: { agencyId: demoAgency.id, isPrimaryAdmin: true },
+      },
+    },
+  })
+  console.log(
+    `Seeded demo agency "${demoAgency.name}" (Business ID ${demoAgency.businessId}) with primary admin ${agentUser.email} (password: ${DEMO_PASSWORD})`,
+  )
+
+  for (const artist of DEMO_ARTISTS) {
+    const email = `${artist.slug}@artistinetti.fi`
+    const existingUser = await prisma.user.findUnique({ where: { email } })
+    if (existingUser) {
+      await prisma.artistProfile.update({
+        where: { ownerUserId: existingUser.id },
+        data: {
+          approvalStatus: "APPROVED",
+          isPublished: true,
+          heroImageUrl: artist.heroImageUrl,
+          galleryImageUrls: artist.galleryImageUrls,
+        },
+      })
+      continue
+    }
+
+    const isAgencyManaged = artist.slug === DEMO_AGENCY_MANAGED_SLUG
+
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email,
+          name: artist.bandName,
+          passwordHash: demoPasswordHash,
+          role: "ARTIST",
+          status: "APPROVED",
+          locale: "fi",
+        },
+      })
+
+      const ownAgency = await tx.agency.create({
+        data: { name: artist.bandName, isSelfManaged: true },
+      })
+
+      await tx.artistProfile.create({
+        data: {
+          ownerUserId: user.id,
+          agencyId: isAgencyManaged ? demoAgency.id : ownAgency.id,
+          ownAgencyId: ownAgency.id,
+          bandSlug: artist.slug,
+          bandName: artist.bandName,
+          bio: artist.bio,
+          bioEn: artist.bioEn,
+          genres: artist.genres,
+          city: artist.city,
+          region: artist.region,
+          country: "FI",
+          minBudgetEur: artist.minBudgetEur,
+          maxBudgetEur: artist.maxBudgetEur,
+          eventTypes: artist.eventTypes,
+          heroImageUrl: artist.heroImageUrl,
+          galleryImageUrls: artist.galleryImageUrls,
+          approvalStatus: "APPROVED",
+          isPublished: true,
+          members: {
+            create: { userId: user.id, displayName: artist.bandName, isOwner: true },
+          },
+        },
+      })
+    })
+  }
+  console.log(
+    `Seeded ${DEMO_ARTISTS.length} demo artists (password: ${DEMO_PASSWORD}) — "${DEMO_AGENCY_MANAGED_SLUG}" is represented by Nordic Artist Agency, the rest are self-managed`,
+  )
 }
 
 main()

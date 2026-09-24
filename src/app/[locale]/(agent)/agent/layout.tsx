@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users } from "lucide-react"
+import { LayoutDashboard, Users, Building2 } from "lucide-react"
 import { getTranslations } from "next-intl/server"
 import { DashboardShell, type DashboardNavItem } from "@/components/dashboard/dashboard-shell"
 import { requireRole } from "@/lib/auth"
@@ -16,6 +16,7 @@ export default async function AgentLayout({
   const navItems: DashboardNavItem[] = [
     { href: "/agent/dashboard", label: t("overview"), icon: <LayoutDashboard /> },
     { href: "/agent/artists", label: t("artists"), icon: <Users /> },
+    { href: "/agent/agency", label: t("agency"), icon: <Building2 /> },
   ]
 
   return (

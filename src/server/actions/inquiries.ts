@@ -5,7 +5,12 @@ import { signIn } from "@/lib/auth"
 import { requireRole } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { createInquirySchema } from "@/lib/validation/inquiry"
-import { createInquiry, updateInquiryStatus } from "@/server/services/inquiries"
+import {
+  confirmInquiry,
+  createInquiry,
+  declineInquiryGate1,
+  updateInquiryStatus,
+} from "@/server/services/inquiries"
 
 function fieldErrorsFrom(error: {
   flatten: () => { fieldErrors: Record<string, string[] | undefined> }
@@ -76,4 +81,19 @@ export async function updateInquiryStatusAction(
   await updateInquiryStatus(user.id, inquiryId, status)
   revalidatePath("/artist/inquiries")
   revalidatePath(`/artist/inquiries/${inquiryId}`)
+}
+
+/** Gate 1 quick action: confirm the inquiry is worth pursuing. */
+export async function confirmInquiryAction(inquiryId: string) {
+  const user = await requireRole("ARTIST")
+  await confirmInquiry(user.id, inquiryId)
+  revalidatePath("/artist/inquiries")
+  revalidatePath("/artist/availability")
+}
+
+/** Gate 1 quick action: decline — silently closes the inquiry. */
+export async function declineInquiryAction(inquiryId: string) {
+  const user = await requireRole("ARTIST")
+  await declineInquiryGate1(user.id, inquiryId)
+  revalidatePath("/artist/inquiries")
 }

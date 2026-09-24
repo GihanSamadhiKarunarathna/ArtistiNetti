@@ -16,13 +16,13 @@ export default async function AgentDashboardPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">
-        Welcome back, {user.name ?? agentProfile.agencyName}
+        Welcome back, {user.name ?? agentProfile.agency.name}
       </h1>
 
       <div className="max-w-sm">
         <StatCard
           label="Managed artists"
-          value={agentProfile.managedArtists.length}
+          value={agentProfile.agency.artists.length}
           icon={<Mic2 />}
           action={
             <Button variant="link" className="h-auto p-0" asChild>

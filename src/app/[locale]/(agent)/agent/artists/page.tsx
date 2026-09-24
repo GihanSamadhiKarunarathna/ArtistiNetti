@@ -36,7 +36,7 @@ export default async function AgentArtistsPage() {
       </Card>
 
       <div className="space-y-3">
-        {agentProfile.managedArtists.map((artist) => (
+        {agentProfile.agency.artists.map((artist) => (
           <Card key={artist.id} className="flex flex-row items-center justify-between gap-4 p-4">
             <div>
               <p className="font-medium">{artist.bandName}</p>
@@ -52,7 +52,7 @@ export default async function AgentArtistsPage() {
             </div>
           </Card>
         ))}
-        {agentProfile.managedArtists.length === 0 && (
+        {agentProfile.agency.artists.length === 0 && (
           <p className="text-sm text-muted-foreground">No artists yet.</p>
         )}
       </div>

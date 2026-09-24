@@ -125,6 +125,7 @@
     "eventTypes": "Tapahtumatyypit, joissa esiinnyt",
     "minBudget": "Alkaen-hinta (EUR)",
     "agencyName": "Agentuurin nimi",
+    "businessId": "Y-tunnus (valinnainen)",
     "commissionPct": "Vakiokomissio (%)",
     "submitArtist": "Luo artistitilini",
     "submitAgent": "Luo agenttitilini",
@@ -187,6 +188,8 @@
     "techRider": "Tekninen rideri (PDF)",
     "stagePlan": "Lavasuunnitelma (PDF)",
     "gallery": "Galleria",
+    "availability": "Saatavuus",
+    "availabilityHint": "Nopea katsaus tuleviin varauksiin — lähetä pyyntö vahvistaaksesi päivämääräsi.",
     "notPublished": "Tämä profiili ei ole vielä julkinen."
   },
   "inquiry": {
@@ -222,7 +225,9 @@
     "artists": "Omat artistit",
     "users": "Käyttäjät",
     "artistApprovals": "Artistien hyväksynnät",
-    "settings": "Asetukset"
+    "settings": "Asetukset",
+    "expenses": "Kulut",
+    "agency": "Agentuuri"
   },
   "artistDashboard": {
     "overviewTitle": "Yleiskatsaus",
@@ -265,6 +270,8 @@
   "inquiries": {
     "title": "Tiedustelut",
     "subtitle": "Asiakkaiden pyynnöt, jotka koskevat sinun varaamistasi.",
+    "awaitingYourConfirmation": "Odottaa vahvistustasi",
+    "statusAwaitingConfirmation": "Odottaa vahvistusta",
     "statusNew": "Uusi",
     "statusInReview": "Käsittelyssä",
     "statusQuoted": "Tarjottu",

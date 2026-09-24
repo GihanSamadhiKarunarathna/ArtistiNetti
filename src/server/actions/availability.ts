@@ -7,7 +7,7 @@ import {
   createAvailabilityEntry,
   deleteAvailabilityEntry,
 } from "@/server/services/availability"
-import { getOwnArtistProfile } from "@/server/services/artist-profile"
+import { getArtistProfileForMember } from "@/server/services/artist-profile"
 import type { ActionState } from "./auth"
 
 function fieldErrorsFrom(error: {
@@ -38,12 +38,19 @@ export async function createAvailabilityAction(
     return { error: "validation", fieldErrors: fieldErrorsFrom(parsed.error) }
   }
 
-  const profile = await getOwnArtistProfile(user.id)
-  await createAvailabilityEntry(profile.id, {
-    ...parsed.data,
-    startDate: new Date(parsed.data.startDate),
-    endDate: new Date(parsed.data.endDate),
-  })
+  const profile = await getArtistProfileForMember(user.id)
+  try {
+    await createAvailabilityEntry(profile.id, {
+      ...parsed.data,
+      startDate: new Date(parsed.data.startDate),
+      endDate: new Date(parsed.data.endDate),
+    })
+  } catch (error) {
+    if (error instanceof Error && error.message === "DATE_CONFLICT") {
+      return { error: "dateConflict" }
+    }
+    throw error
+  }
 
   revalidatePath("/artist/availability")
   return null

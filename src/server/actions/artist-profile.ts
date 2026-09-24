@@ -4,15 +4,15 @@ import { revalidatePath } from "next/cache"
 import { requireRole } from "@/lib/auth"
 import { putFile } from "@/lib/storage"
 import {
-  addBandMemberSchema,
   updateArtistProfileSchema,
+  updateBandMemberSchema,
 } from "@/lib/validation/artist-profile"
 import {
-  addBandMember,
   addGalleryImage,
   removeBandMember,
   setPublished,
   updateArtistProfile,
+  updateBandMemberPermissions,
   updateMediaFields,
 } from "@/server/services/artist-profile"
 import type { ActionState } from "./auth"
@@ -117,29 +117,30 @@ export async function uploadStagePlanAction(formData: FormData) {
   return { error: null, url }
 }
 
-export async function addBandMemberAction(
+export async function removeBandMemberAction(memberId: string) {
+  const user = await requireRole("ARTIST")
+  await removeBandMember(user.id, memberId)
+  revalidatePath("/artist/profile")
+}
+
+export async function updateBandMemberAction(
+  memberId: string,
   _prevState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   const user = await requireRole("ARTIST")
 
-  const parsed = addBandMemberSchema.safeParse({
-    displayName: formData.get("displayName"),
-    instrument: formData.get("instrument") || undefined,
+  const parsed = updateBandMemberSchema.safeParse({
     payoutSharePct: formData.get("payoutSharePct") || undefined,
+    canManageCalendar: formData.get("canManageCalendar") === "on",
+    canLogExpenses: formData.get("canLogExpenses") === "on",
   })
 
   if (!parsed.success) {
     return { error: "validation", fieldErrors: fieldErrorsFrom(parsed.error) }
   }
 
-  await addBandMember(user.id, parsed.data)
+  await updateBandMemberPermissions(user.id, memberId, parsed.data)
   revalidatePath("/artist/profile")
-  return null
-}
-
-export async function removeBandMemberAction(memberId: string) {
-  const user = await requireRole("ARTIST")
-  await removeBandMember(user.id, memberId)
-  revalidatePath("/artist/profile")
+  return { error: "saved" }
 }

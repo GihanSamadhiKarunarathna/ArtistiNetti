@@ -125,6 +125,7 @@
     "eventTypes": "Event types you play",
     "minBudget": "Starting price (EUR)",
     "agencyName": "Agency name",
+    "businessId": "Business ID (optional)",
     "commissionPct": "Standard commission (%)",
     "submitArtist": "Create my artist account",
     "submitAgent": "Create my agent account",
@@ -187,6 +188,8 @@
     "techRider": "Tech rider (PDF)",
     "stagePlan": "Stage plan (PDF)",
     "gallery": "Gallery",
+    "availability": "Availability",
+    "availabilityHint": "A quick look at upcoming commitments — send a request to confirm your date.",
     "notPublished": "This profile is not public yet."
   },
   "inquiry": {
@@ -222,7 +225,9 @@
     "artists": "My artists",
     "users": "Users",
     "artistApprovals": "Artist approvals",
-    "settings": "Settings"
+    "settings": "Settings",
+    "expenses": "Expenses",
+    "agency": "Agency"
   },
   "artistDashboard": {
     "overviewTitle": "Overview",
@@ -265,6 +270,8 @@
   "inquiries": {
     "title": "Inquiries",
     "subtitle": "Requests from clients interested in booking you.",
+    "awaitingYourConfirmation": "Awaiting your confirmation",
+    "statusAwaitingConfirmation": "Awaiting confirmation",
     "statusNew": "New",
     "statusInReview": "In review",
     "statusQuoted": "Quoted",

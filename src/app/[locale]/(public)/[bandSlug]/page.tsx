@@ -6,7 +6,11 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Link } from "@/i18n/navigation"
 import { spotifyEmbedUrl, youtubeEmbedUrl } from "@/lib/embeds"
+import { getCityCoords } from "@/lib/finnish-cities"
+import { MiniMap } from "@/components/shared/mini-map"
+import { PublicAvailabilityCalendar } from "@/components/features/availability/public-availability-calendar"
 import { getPublicArtistBySlug } from "@/server/services/discovery"
+import { listPublicBusyDates } from "@/server/services/availability"
 
 export async function generateMetadata({
   params,
@@ -45,6 +49,8 @@ export default async function ArtistPublicPage({
   const bio = locale === "en" && artist.bioEn ? artist.bioEn : artist.bio
   const spotify = artist.spotifyUrl ? spotifyEmbedUrl(artist.spotifyUrl) : null
   const youtube = artist.youtubeUrl ? youtubeEmbedUrl(artist.youtubeUrl) : null
+  const coords = getCityCoords(artist.city)
+  const busyDates = await listPublicBusyDates(artist.id)
 
   return (
     <div>
@@ -96,12 +102,37 @@ export default async function ArtistPublicPage({
           </div>
         </div>
 
-        {bio && (
-          <section className="mt-10">
-            <h2 className="text-xl font-semibold">{t("about")}</h2>
-            <p className="mt-3 whitespace-pre-line text-muted-foreground">{bio}</p>
+        {(bio || coords) && (
+          <section className="mt-10 grid gap-6 sm:grid-cols-5">
+            {bio && (
+              <div className="sm:col-span-3">
+                <h2 className="text-xl font-semibold">{t("about")}</h2>
+                <p className="mt-3 whitespace-pre-line text-muted-foreground">{bio}</p>
+              </div>
+            )}
+            {coords && (
+              <div className={bio ? "sm:col-span-2" : "sm:col-span-5"}>
+                <h2 className="text-xl font-semibold">{t("location")}</h2>
+                <div className="mt-3 h-48 overflow-hidden rounded-xl border">
+                  <MiniMap lat={coords[0]} lng={coords[1]} label={artist.bandName} />
+                </div>
+              </div>
+            )}
           </section>
         )}
+
+        <section className="mt-10">
+          <h2 className="text-xl font-semibold">{t("availability")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("availabilityHint")}</p>
+          <div className="mt-3">
+            <PublicAvailabilityCalendar
+              busyRanges={busyDates.map((d) => ({
+                startDate: d.startDate.toISOString(),
+                endDate: d.endDate.toISOString(),
+              }))}
+            />
+          </div>
+        </section>
 
         {artist.eventTypes.length > 0 && (
           <section className="mt-8">

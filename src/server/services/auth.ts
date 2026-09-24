@@ -38,6 +38,12 @@ async function uniqueBandSlug(bandName: string) {
   return slug
 }
 
+/**
+ * Every band always represents a tenant "agency" — self-represented bands get
+ * their own auto-created agency-of-one at signup. Two-step create because the
+ * owner's BandMember row needs the user's id, and the ArtistProfile needs the
+ * agency's id.
+ */
 export async function registerArtist(input: RegisterArtistInput) {
   const existing = await prisma.user.findUnique({
     where: { email: input.email },
@@ -47,38 +53,51 @@ export async function registerArtist(input: RegisterArtistInput) {
   const passwordHash = await bcrypt.hash(input.password, 10)
   const bandSlug = await uniqueBandSlug(input.bandName)
 
-  const user = await prisma.user.create({
-    data: {
-      email: input.email,
-      name: input.fullName,
-      phone: input.phone,
-      passwordHash,
-      role: "ARTIST",
-      status: "PENDING",
-      artistProfile: {
-        create: {
-          bandSlug,
-          bandName: input.bandName,
-          bio: input.bio,
-          genres: input.genres,
-          city: input.city,
-          region: input.region,
-          country: input.country,
-          minBudgetEur: input.minBudgetEur,
-          eventTypes: input.eventTypes,
-          members: {
-            create: {
-              displayName: input.fullName,
-              isOwner: true,
-            },
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        email: input.email,
+        name: input.fullName,
+        phone: input.phone,
+        passwordHash,
+        role: "ARTIST",
+        status: "PENDING",
+      },
+    })
+
+    const ownAgency = await tx.agency.create({
+      data: {
+        name: input.bandName,
+        isSelfManaged: true,
+      },
+    })
+
+    const artistProfile = await tx.artistProfile.create({
+      data: {
+        ownerUserId: user.id,
+        agencyId: ownAgency.id,
+        ownAgencyId: ownAgency.id,
+        bandSlug,
+        bandName: input.bandName,
+        bio: input.bio,
+        genres: input.genres,
+        city: input.city,
+        region: input.region,
+        country: input.country,
+        minBudgetEur: input.minBudgetEur,
+        eventTypes: input.eventTypes,
+        members: {
+          create: {
+            userId: user.id,
+            displayName: input.fullName,
+            isOwner: true,
           },
         },
       },
-    },
-    include: { artistProfile: true },
-  })
+    })
 
-  return user
+    return { ...user, artistProfile }
+  })
 }
 
 export async function registerAgent(input: RegisterAgentInput) {
@@ -89,23 +108,33 @@ export async function registerAgent(input: RegisterAgentInput) {
 
   const passwordHash = await bcrypt.hash(input.password, 10)
 
-  const user = await prisma.user.create({
-    data: {
-      email: input.email,
-      name: input.fullName,
-      phone: input.phone,
-      passwordHash,
-      role: "AGENT",
-      status: "PENDING",
-      agentProfile: {
-        create: {
-          agencyName: input.agencyName,
-          commissionPct: input.commissionPct,
+  return prisma.$transaction(async (tx) => {
+    const agency = await tx.agency.create({
+      data: {
+        name: input.agencyName,
+        businessId: input.businessId || null,
+        defaultCommissionPct: input.commissionPct,
+      },
+    })
+
+    const user = await tx.user.create({
+      data: {
+        email: input.email,
+        name: input.fullName,
+        phone: input.phone,
+        passwordHash,
+        role: "AGENT",
+        status: "PENDING",
+        agentProfile: {
+          create: {
+            agencyId: agency.id,
+            isPrimaryAdmin: true,
+          },
         },
       },
-    },
-    include: { agentProfile: true },
-  })
+      include: { agentProfile: true },
+    })
 
-  return user
+    return user
+  })
 }

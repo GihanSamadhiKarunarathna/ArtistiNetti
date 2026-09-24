@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { StatCard } from "@/components/shared/stat-card"
 import { Link } from "@/i18n/navigation"
 import { requireRole } from "@/lib/auth"
-import { getOwnArtistProfile } from "@/server/services/artist-profile"
+import { getArtistProfileForMember } from "@/server/services/artist-profile"
 import { countInquiriesByStatus } from "@/server/services/inquiries"
 import { countUpcomingGigs } from "@/server/services/availability"
 
@@ -29,7 +29,7 @@ export default async function ArtistDashboardPage() {
     requireRole("ARTIST"),
     getTranslations("artistDashboard"),
   ])
-  const profile = await getOwnArtistProfile(user.id)
+  const profile = await getArtistProfileForMember(user.id)
   const [newInquiries, upcomingGigs] = await Promise.all([
     countInquiriesByStatus(profile.id, "NEW"),
     countUpcomingGigs(profile.id),
